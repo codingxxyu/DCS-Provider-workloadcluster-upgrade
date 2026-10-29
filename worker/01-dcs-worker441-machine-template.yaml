@@ -1,0 +1,39 @@
+# Worker DCSMachineTemplate for ACP v4.4.1 / Kubernetes v1.35.6-acp.9.
+# NEW name. Do not edit the live dcs-workloadcluster-worker-template in place.
+# Keep ipHostPoolRef on the existing worker pool. Do NOT use the CP pool.
+# No /var/lib/etcd on workers. /var/cpaas stays on the IP pool, not here.
+# Leave providerID unset. Strip uid / resourceVersion / status / last-applied before apply.
+# This environment has no Datastore Cluster; disks use datastoreName.
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DCSMachineTemplate
+metadata:
+  name: dcs-workloadcluster-worker441-template
+  namespace: cpaas-system
+spec:
+  template:
+    spec:
+      ipHostPoolRef:
+        name: dcs-workloadcluster-worker-ippool
+      vmTemplateName: 441slem-alaudaos-vda
+      location:
+        type: folder
+        name: ACP_Cluster
+      vmConfig:
+        dvSwitchName: ManagementDVS
+        portGroupName: VLAN-329
+        dcsMachineCpuSpec:
+          quantity: 8
+        dcsMachineMemorySpec:
+          quantity: 16384
+        dcsMachineDiskSpec:
+          - quantity: 0
+            datastoreName: jkt01-POC-DEV-DCS-01
+            systemVolume: true
+          - quantity: 100
+            datastoreName: jkt01-POC-DEV-DCS-01
+            path: /var/lib/kubelet
+            format: xfs
+          - quantity: 100
+            datastoreName: jkt01-POC-DEV-DCS-01
+            path: /var/lib/containerd
+            format: xfs

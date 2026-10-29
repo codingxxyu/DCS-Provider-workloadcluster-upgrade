@@ -1,0 +1,44 @@
+# Control-plane DCSMachineTemplate for ACP v4.4.1 / Kubernetes v1.35.6-acp.9.
+# NEW name. Do not edit the live dcs-workloadcluster-cp-template in place.
+# Cluster API only rolls when KubeadmControlPlane points at a different template name.
+# Keep ipHostPoolRef on the existing CP pool. Do not point this at the worker pool.
+# Keep /var/lib/etcd (CP only). /var/cpaas stays on the IP pool, not here.
+# Leave providerID unset. Strip uid / resourceVersion / status / last-applied before apply.
+# This environment has no Datastore Cluster; disks use datastoreName.
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: DCSMachineTemplate
+metadata:
+  name: dcs-workloadcluster-cp441-template
+  namespace: cpaas-system
+spec:
+  template:
+    spec:
+      ipHostPoolRef:
+        name: dcs-workloadcluster-cp-ippool
+      vmTemplateName: 441slem-alaudaos-vda
+      location:
+        type: folder
+        name: ACP_Cluster
+      vmConfig:
+        dvSwitchName: ManagementDVS
+        portGroupName: VLAN-329
+        dcsMachineCpuSpec:
+          quantity: 16
+        dcsMachineMemorySpec:
+          quantity: 32768
+        dcsMachineDiskSpec:
+          - quantity: 0
+            datastoreName: jkt01-POC-DEV-DCS-01
+            systemVolume: true
+          - quantity: 100
+            datastoreName: jkt01-POC-DEV-DCS-01
+            path: /var/lib/kubelet
+            format: xfs
+          - quantity: 100
+            datastoreName: jkt01-POC-DEV-DCS-01
+            path: /var/lib/containerd
+            format: xfs
+          - quantity: 10
+            datastoreName: jkt01-POC-DEV-DCS-01
+            path: /var/lib/etcd
+            format: xfs

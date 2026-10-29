@@ -1,0 +1,35 @@
+# DO NOT kubectl apply this file.
+# It is not a complete MachineDeployment. Applying it will wipe live fields.
+#
+# After worker/01 and worker/02 exist, and only after all three CP Machines
+# are v1.35.6-acp.9 Running (see README):
+#   kubectl -n cpaas-system edit machinedeployment dcs-workloadcluster-worker-deployment
+# Change the fields below in ONE save. Do not copy coredns / etcd imageTag here
+# (those exist only on KubeadmControlPlane).
+#
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: dcs-workloadcluster-worker-deployment
+  namespace: cpaas-system
+spec:
+  clusterName: dcs-workloadcluster
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  template:
+    spec:
+      version: v1.35.6-acp.9
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: dcs-workloadcluster-worker441-kct
+          namespace: cpaas-system
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: DCSMachineTemplate
+        name: dcs-workloadcluster-worker441-template
+        namespace: cpaas-system

@@ -1,0 +1,67 @@
+# DO NOT kubectl apply this file.
+# It is not a complete KubeadmControlPlane. Applying it will wipe live fields.
+#
+# After cp/01 exists, and only after Phase 1 + kube-ovn Success (see README):
+#   kubectl -n cpaas-system edit kubeadmcontrolplane dcs-workloadcluster-kcp
+# Change the fields below in ONE save. Leave everything else (SSH key, PSA,
+# audit policy, extraArgs, preKubeadmCommands, PROVIDER_ID, NODE_IP) alone.
+#
+# Target ACP v4.4.1 row:
+#   version     v1.35.6-acp.9
+#   coredns     1.14.7-v4.4.7
+#   etcd        v3.6.13-acp.2
+#   template    dcs-workloadcluster-cp441-template
+#   maxSurge    0
+#
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: dcs-workloadcluster-kcp
+  namespace: cpaas-system
+spec:
+  version: v1.35.6-acp.9
+  rolloutStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      kind: DCSMachineTemplate
+      name: dcs-workloadcluster-cp441-template
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      dns:
+        imageTag: 1.14.7-v4.4.7
+      etcd:
+        local:
+          imageTag: v3.6.13-acp.2
+    # In the existing files[] entry whose path is
+    # /etc/kubernetes/patches/kubeletconfiguration0+strategic.json
+    # add imagePullCredentialsVerificationPolicy. Do not drop the other keys.
+    # Target JSON:
+    # {
+    #   "apiVersion": "kubelet.config.k8s.io/v1beta1",
+    #   "kind": "KubeletConfiguration",
+    #   "imagePullCredentialsVerificationPolicy": "NeverVerify",
+    #   "protectKernelDefaults": true,
+    #   "tlsCertFile": "/etc/kubernetes/pki/kubelet.crt",
+    #   "tlsPrivateKeyFile": "/etc/kubernetes/pki/kubelet.key",
+    #   "streamingConnectionIdleTimeout": "5m",
+    #   "clientCAFile": "/etc/kubernetes/pki/ca.crt"
+    # }
+    files:
+      - path: /etc/kubernetes/patches/kubeletconfiguration0+strategic.json
+        owner: "root:root"
+        permissions: "0644"
+        content: |
+          {
+            "apiVersion": "kubelet.config.k8s.io/v1beta1",
+            "kind": "KubeletConfiguration",
+            "imagePullCredentialsVerificationPolicy": "NeverVerify",
+            "protectKernelDefaults": true,
+            "tlsCertFile": "/etc/kubernetes/pki/kubelet.crt",
+            "tlsPrivateKeyFile": "/etc/kubernetes/pki/kubelet.key",
+            "streamingConnectionIdleTimeout": "5m",
+            "clientCAFile": "/etc/kubernetes/pki/ca.crt"
+          }
